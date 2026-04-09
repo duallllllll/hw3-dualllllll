@@ -91,14 +91,16 @@ Sequence *create_sequence(LLMEngine *engine, int seq_id, int initial_kv_len) {
     if (!success) {
         for (int i = 0; i < L1_PT_SIZE; i++) {
             if (seq->block_table[i] != NULL) {
+                int *l2 = seq->block_table[i];
                 for (int j = 0; j < L2_PT_SIZE; j++) {
-                    int blk = seq->block_table[i][j];
+                    int blk = l2[j];
                     if (blk != -1) {
-                        engine->ref_count[blk] = 0;
-                        engine->free_local_blocks++;
+                        engine->ref_count[blk]--;
+                        if (engine->ref_count[blk] == 0)
+                            engine->free_local_blocks++;
                     }
                 }
-                free(seq->block_table[i]);
+                free(l2);
             }
         }
         free(seq->block_table);
@@ -122,15 +124,16 @@ int free_sequence(LLMEngine *engine, int seq_id) {
     seq->node.next->prev = seq->node.prev;
     for (int i = 0; i < L1_PT_SIZE; i++) {
         if (seq->block_table[i] != NULL) {
+            int *l2 = seq->block_table[i];
             for (int j = 0; j < L2_PT_SIZE; j++) {
-                int blk = seq->block_table[i][j];
+                int blk = l2[j];
                 if (blk != -1) {
                     engine->ref_count[blk]--;
                     if (engine->ref_count[blk] == 0)
                         engine->free_local_blocks++;
                 }
             }
-            free(seq->block_table[i]);
+            free(l2);
         }
     }
     free(seq->block_table);
@@ -180,8 +183,18 @@ Sequence *fork_sequence(LLMEngine *engine, int parent_seq_id, int new_seq_id) {
     }
     if (!success) {
         for (int i = 0; i < L1_PT_SIZE; i++) {
-            if (child->block_table[i] != NULL)
-                free(child->block_table[i]);
+            if (child->block_table[i] != NULL) {
+                int *l2 = child->block_table[i];
+                for (int j = 0; j < L2_PT_SIZE; j++) {
+                    int blk = l2[j];
+                    if (blk != -1) {
+                        engine->ref_count[blk]--;
+                        if (engine->ref_count[blk] == 0)
+                            engine->free_local_blocks++;
+                    }
+                }
+                free(l2);
+            }
         }
         free(child->block_table);
         free(child);
@@ -253,7 +266,7 @@ int append_kv(LLMEngine *engine, int seq_id, int kv_data) {
 
 int llm_destroy(LLMEngine *engine) {
     if (engine == NULL)
-        return 0;
+        return -1;
     struct list_node *cur = engine->active_seqs.next;
     while (cur != &engine->active_seqs) {
         struct list_node *next = cur->next;
