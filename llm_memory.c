@@ -182,7 +182,6 @@ int free_sequence(LLMEngine *engine, int seq_id)
     free(seq);
     return 0;
 }
-
 Sequence *fork_sequence(LLMEngine *engine, int parent_seq_id, int new_seq_id)
 {
     if (engine == NULL)
@@ -275,7 +274,6 @@ Sequence *fork_sequence(LLMEngine *engine, int parent_seq_id, int new_seq_id)
     engine->active_seqs.prev = &child->node;
     return child;
 }
-
 int append_kv(LLMEngine *engine, int seq_id, int kv_data)
 {
     if (engine == NULL)
@@ -355,7 +353,6 @@ int append_kv(LLMEngine *engine, int seq_id, int kv_data)
     seq->kv_count++;
     return 0;
 }
-
 int llm_destroy(LLMEngine *engine)
 {
     if (engine == NULL)
