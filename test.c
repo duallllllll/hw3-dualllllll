@@ -6,7 +6,8 @@
 
 #define TEST(cond, msg) do { if (cond) printf("[PASS] %s\n", msg); else { printf("[FAIL] %s\n", msg); exit(1); } } while(0)
 
-int main() {
+int main() 
+{
     const int NUM_BLOCKS = 256;
     size_t pool_size = NUM_BLOCKS * BLOCK_SIZE;
     void *pool = malloc(pool_size);
